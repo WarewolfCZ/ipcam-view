@@ -11,7 +11,7 @@ buildscript {
 }
 
 allprojects {
-    group = 'com.github.niqdev'
+    group = 'cz.warewolf.components.video'
     version = '1.3.2'
 
     repositories {
