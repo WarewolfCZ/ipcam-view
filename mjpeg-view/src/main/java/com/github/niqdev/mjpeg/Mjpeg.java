@@ -2,7 +2,6 @@ package com.github.niqdev.mjpeg;
 
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,11 +9,6 @@ import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
 import java.net.URL;
-import java.util.concurrent.TimeUnit;
-
-import rx.Observable;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
 
 /**
  * A library wrapper for handle mjpeg streams.
@@ -94,29 +88,22 @@ public class Mjpeg {
     }
 
     @NonNull
-    private Observable<MjpegInputStream> connect(String url) {
-        return Observable.defer(() -> {
-            try {
-                HttpURLConnection urlConnection = (HttpURLConnection) new URL(url).openConnection();
-                urlConnection.setRequestProperty("Cache-Control", "no-cache");
-                if (sendConnectionCloseHeader) {
-                    urlConnection.setRequestProperty("Connection", "close");
-                }
+    private MjpegInputStream connect(String url) throws IOException {
+        HttpURLConnection urlConnection = (HttpURLConnection) new URL(url).openConnection();
+        urlConnection.setRequestProperty("Cache-Control", "no-cache");
+        if (sendConnectionCloseHeader) {
+            urlConnection.setRequestProperty("Connection", "close");
+        }
 
-                InputStream inputStream = urlConnection.getInputStream();
-                switch (type) {
-                    // handle multiple implementations
-                    case DEFAULT:
-                        return Observable.just(new MjpegInputStreamDefault(inputStream));
-                    case NATIVE:
-                        return Observable.just(new MjpegInputStreamNative(inputStream));
-                }
-                throw new IllegalStateException("invalid type");
-            } catch (IOException e) {
-                Log.e(TAG, "error during connection", e);
-                return Observable.error(e);
-            }
-        });
+        InputStream inputStream = urlConnection.getInputStream();
+        switch (type) {
+            // handle multiple implementations
+            case DEFAULT:
+                return new MjpegInputStreamDefault(inputStream);
+            case NATIVE:
+                return new MjpegInputStreamNative(inputStream);
+        }
+        throw new IllegalStateException("invalid type");
     }
 
     /**
@@ -125,10 +112,8 @@ public class Mjpeg {
      * @param url source
      * @return Observable Mjpeg stream
      */
-    public Observable<MjpegInputStream> open(String url) {
-        return connect(url)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread());
+    public MjpegInputStream open(String url) throws IOException {
+        return connect(url);
     }
 
     /**
@@ -138,11 +123,8 @@ public class Mjpeg {
      * @param timeout in seconds
      * @return Observable Mjpeg stream
      */
-    public Observable<MjpegInputStream> open(String url, int timeout) {
-        return connect(url)
-            .timeout(timeout, TimeUnit.SECONDS)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread());
+    public MjpegInputStream open(String url, int timeout) throws IOException {
+        return connect(url);
     }
 
 }
